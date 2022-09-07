@@ -25,6 +25,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
+#include "usbd_cdc_if.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,6 +70,82 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+uint32_t Tick_GetCount (void) {
+  return HAL_GetTick();
+}
+
+void printf_debug(const char *format, ...)
+{
+	  char message[300]={};
+	  sprintf(message,format);
+	  HAL_UART_Transmit(&huart4, (uint8_t*)message, strlen(message),10);
+}
+
+static int HiMsgCounter=0;
+static int HiMsgCounterTemp=0;
+
+
+void USB_Test_Send_Packet()
+{
+	static char HiMsg[1024]={};
+
+	sprintf((char*)HiMsg,"%01000d\r\n",HiMsgCounter);
+	CDC_Transmit_FS((uint8_t*)HiMsg,(uint16_t) 1024);
+	HiMsgCounter++;
+	HiMsgCounterTemp++;
+}
+
+#define  USB_TEST_CALLBACK_MODE
+//#define USB_TEST_TASK_MODE
+
+void CDC_TransmitCplt_FS_callback(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
+#ifdef USB_TEST_CALLBACK_MODE
+{
+	USB_Test_Send_Packet();
+}
+#else
+{
+}
+#endif
+
+osThreadId_t UsbTestTaskHandle;
+const osThreadAttr_t UsbTestTask_attributes = {
+  .name = "UsbTestTask",
+  .stack_size = 2048 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
+void test_USB(void* p)
+{
+  vTaskDelay(3000);
+
+  printf_debug("Start USB test task.\n");
+
+#ifdef USB_TEST_TASK_MODE
+  for (;;)
+  {
+	  USB_Test_Send_Packet();
+
+	  vTaskDelay(100);
+  }
+#endif
+
+#ifdef USB_TEST_CALLBACK_MODE
+  USB_Test_Send_Packet(); // send first packet..
+  for (;;)
+  {
+	  vTaskDelay(100);
+  }
+#endif
+
+  for (;;)
+  {
+	  vTaskDelay(100);
+  }
+
+  vTaskDelete(NULL);
+}
 
 /* USER CODE END 0 */
 
@@ -126,7 +204,7 @@ int main(void)
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
+  UsbTestTaskHandle = osThreadNew(test_USB, NULL, &UsbTestTask_attributes);
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -251,8 +329,8 @@ static void MX_GPIO_Init(void)
 {
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
 
 }
@@ -277,6 +355,17 @@ void StartDefaultTask(void *argument)
   for(;;)
   {
     osDelay(1);
+
+/*    static uint32_t last_message_sent;
+    if((Tick_GetCount()-last_message_sent)>1000)
+    {
+    	last_message_sent=Tick_GetCount();
+    	char boot_message[300]={};
+    	sprintf(boot_message,"HiMsgCounter:%08d,HiMsgCounterTemp=%08d\r\n",HiMsgCounter,HiMsgCounterTemp);
+    	HAL_UART_Transmit(&huart4, (uint8_t*)boot_message, strlen(boot_message),10);
+    	HiMsgCounterTemp=0;
+    }*/
+
   }
   /* USER CODE END 5 */
 }

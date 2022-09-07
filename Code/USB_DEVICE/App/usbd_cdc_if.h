@@ -30,7 +30,7 @@
 #include "usbd_cdc.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+ extern void CDC_TransmitCplt_FS_callback(uint8_t *Buf, uint32_t *Len, uint8_t epnum);
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
