@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "usbd_cdc_if.h"
+#include "task.h"
 
 /* USER CODE END Includes */
 
@@ -51,7 +52,7 @@ UART_HandleTypeDef huart4;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 512 * 4,
+  .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -80,6 +81,24 @@ void printf_debug(const char *format, ...)
 	  char message[300]={};
 	  sprintf(message,format);
 	  HAL_UART_Transmit(&huart4, (uint8_t*)message, strlen(message),10);
+}
+
+void vApplicationStackOverflowHook_callback(TaskHandle_t xTask, signed char *pcTaskName)
+{
+   /* Run time stack overflow checking is performed if
+   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+   called if a stack overflow is detected. */
+
+  char message[300]={};
+  sprintf(message,"StackOverflow,in %s",pcTaskName);
+  //sprintf(message,"StackOverflow,in %s,pcTaskName:%s",pcTaskName,*xTask->pcTaskName);
+  //sprintf(message,"StackOverflow,in %s,pcTaskName:%s,pxStack:%d,pxTopOfStack:%d",pcTaskName,xTask->pcTaskName,xTask->pxStack,xTask->pxTopOfStack);
+  HAL_UART_Transmit(&huart4, (uint8_t*)message, strlen(message),10);
+
+  while(1)
+  {
+
+  }
 }
 
 static int HiMsgCounter=0;
@@ -205,9 +224,10 @@ int main(void)
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  UsbTestTaskHandle = osThreadNew(test_USB, NULL, &UsbTestTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  UsbTestTaskHandle = osThreadNew(test_USB, NULL, &UsbTestTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
