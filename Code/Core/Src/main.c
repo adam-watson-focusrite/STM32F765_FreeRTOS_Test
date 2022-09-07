@@ -51,7 +51,7 @@ UART_HandleTypeDef huart4;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -84,6 +84,8 @@ void printf_debug(const char *format, ...)
 
 static int HiMsgCounter=0;
 static int HiMsgCounterTemp=0;
+static int HiMsgCounterFreq=0;
+
 
 
 void USB_Test_Send_Packet()
@@ -356,15 +358,18 @@ void StartDefaultTask(void *argument)
   {
     osDelay(1);
 
-/*    static uint32_t last_message_sent;
+    static uint32_t last_message_sent;
     if((Tick_GetCount()-last_message_sent)>1000)
     {
     	last_message_sent=Tick_GetCount();
-    	char boot_message[300]={};
+    	char boot_message[200]={};
+
     	sprintf(boot_message,"HiMsgCounter:%08d,HiMsgCounterTemp=%08d\r\n",HiMsgCounter,HiMsgCounterTemp);
     	HAL_UART_Transmit(&huart4, (uint8_t*)boot_message, strlen(boot_message),10);
+
+    	HiMsgCounterFreq=HiMsgCounterTemp;
     	HiMsgCounterTemp=0;
-    }*/
+    }
 
   }
   /* USER CODE END 5 */
