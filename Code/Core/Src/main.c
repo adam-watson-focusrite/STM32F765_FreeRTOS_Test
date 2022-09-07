@@ -134,7 +134,6 @@ void test_USB(void* p)
 #endif
 
 #ifdef USB_TEST_CALLBACK_MODE
-  USB_Test_Send_Packet(); // send first packet..
   for (;;)
   {
 	  vTaskDelay(100);
@@ -361,14 +360,21 @@ void StartDefaultTask(void *argument)
     static uint32_t last_message_sent;
     if((Tick_GetCount()-last_message_sent)>1000)
     {
-    	last_message_sent=Tick_GetCount();
-    	char boot_message[200]={};
+    	if(HiMsgCounterTemp==0)
+    	{
+    		USB_Test_Send_Packet(); // kick start the transmissions!
+    	}
+    	else
+    	{
+        	last_message_sent=Tick_GetCount();
+        	char boot_message[200]={};
 
-    	sprintf(boot_message,"HiMsgCounter:%08d,HiMsgCounterTemp=%08d\r\n",HiMsgCounter,HiMsgCounterTemp);
-    	HAL_UART_Transmit(&huart4, (uint8_t*)boot_message, strlen(boot_message),10);
+        	sprintf(boot_message,"HiMsgCounter:%08d,HiMsgCounterTemp=%08d\r\n",HiMsgCounter,HiMsgCounterTemp);
+        	HAL_UART_Transmit(&huart4, (uint8_t*)boot_message, strlen(boot_message),10);
 
-    	HiMsgCounterFreq=HiMsgCounterTemp;
-    	HiMsgCounterTemp=0;
+        	HiMsgCounterFreq=HiMsgCounterTemp;
+        	HiMsgCounterTemp=0;
+    	}
     }
 
   }
